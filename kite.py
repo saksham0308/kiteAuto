@@ -37,12 +37,12 @@ time.sleep(20)
 start = driver.current_url.find("request_token=") + 14
 end = driver.current_url.find("&action")
 if end == -1:
-    toke = driver.current_url[start:]
+    myToken = driver.current_url[start:]
 else:
-    toke = driver.current_url[start:end]
-print(toke)
+    myToken = driver.current_url[start:end]
+print(myToken)
 
-data = kite.generate_session(toke, api_secret=myData[3])
+data = kite.generate_session(myToken, api_secret=myData[3])
 kite.set_access_token(data["access_token"])
 print("Session started")
 
