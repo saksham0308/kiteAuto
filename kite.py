@@ -6,7 +6,7 @@ from selenium import webdriver
 from kiteconnect import KiteConnect
 from selenium.webdriver.common.by import By
 
-my_file = open("loginData.txt", "r")
+my_file = open("kiteAuto/loginData.txt", "r")
 
 # reading the file
 data = my_file.read()
@@ -57,7 +57,7 @@ print("Session started")
 #         t = datetime.datetime.now()
 #         print("Time before placing the order", t.minute, t.second, t.microsecond / 1000)
 #         try:
-#             order_id = kite.place_order(tradingsymbol="BANKNIFTY23NOV43700PE",
+#             order_id = kite.place_order(tradingsymbol="BANKNIFTY23NOV43800PE",
 #                                         exchange=kite.EXCHANGE_NFO,
 #                                         transaction_type=kite.TRANSACTION_TYPE_BUY,
 #                                         quantity=15,
@@ -74,8 +74,9 @@ print("Session started")
 #         print("Breaking buyOrder Loop")
 #         break
 
+
 kws = KiteTicker("i59md2vtn6mwc3kd", data["access_token"])
-file_source = r'/kiteAuto/BNData.xlsx'
+file_source = r'kiteAuto/BNData.xlsx'
 a = 3
 used = False
 curRow = 0
@@ -125,8 +126,8 @@ def on_ticks(ws, ticks):
 def on_connect(ws, response):
     # Callback on successful connect.
     # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
-    ws.subscribe([260105, 14918658])
-    ws.set_mode(ws.MODE_FULL, [260105, 14918658])
+    ws.subscribe([260105, 14919170])
+    ws.set_mode(ws.MODE_FULL, [260105, 14919170])
     # 260105==banknifty
 
 
@@ -160,7 +161,7 @@ print("Time after 10 second sleep", t.minute, t.second, t.microsecond / 1000)
 #     if orderBook[-1]['status'] == 'COMPLETE':
 #         t = datetime.datetime.now()
 #         print("Time before selling the order", t.minute, t.second, t.microsecond / 1000)
-#         orderid2 = kite.place_order(tradingsymbol="BANKNIFTY23NOV43700PE",
+#         orderid2 = kite.place_order(tradingsymbol="BANKNIFTY23NOV43800PE",
 #                                     exchange=kite.EXCHANGE_NFO,
 #                                     transaction_type=kite.TRANSACTION_TYPE_SELL,
 #                                     quantity=15,
