@@ -1,14 +1,15 @@
 import datetime
+import openpyxl
 from openpyxl import load_workbook
 import time
 from kiteconnect import KiteTicker
+from openpyxl.styles import PatternFill
 from selenium import webdriver
 from kiteconnect import KiteConnect
 from selenium.webdriver.common.by import By
 import pandas as pd
 import json
 
-# my_file = open("loginData.json", "r")
 my_file = "loginData.json"
 with open(my_file, "r") as file:
     myData = json.load(file)
@@ -56,12 +57,19 @@ last_price = 0
 flag = False
 strike_price = 0
 option_strike = ""
+option_strikeNext1 = ""
 prev1Token = 0
 prev2Token = 0
 next1Token = 0
 next2Token = 0
+option_strikePrev2 = ""
+format1 = "%d-%m-%Y"
+format2 = '%H:%M:%S'
 
 
+# Get instruments
+# with open('readme.csv', 'w') as f:
+#     f.write(str(kite.instruments('NFO')))
 def round_to_nearest_hundred(number):
     remainder = number % 100
 
@@ -79,8 +87,6 @@ def create_option_strike(symbol, date, rounded_number, option_type='PE'):
 
 
 contract_prices = {
-    'Time': [],
-    '260105': ["BANKNIFTY"]
 }
 
 
@@ -96,95 +102,78 @@ def on_ticks(ws, ticks):
     global flag
     global strike_price
     global option_strike
+    global option_strikeNext1
+    global option_strikePrev2
+    global format1
+    global format2
 
-    if not flag:
-        t = datetime.datetime.now()
-        print("time before flag false ", t.minute, t.second, t.microsecond / 1000)
-        if (ticks[0]['last_price']) != (myData.get("bankNiftyLastPrice")):
-            t = datetime.datetime.now()
-            print("time after flag true ", t.minute, t.second, t.microsecond / 1000)
-            # original_number = 45678
-            symbol = myData.get("symbol")
-            date = myData.get("date")
-            # original_number = 45678
-            strike_price = round_to_nearest_hundred(int(ticks[0]['last_price']))
-            option_strike = create_option_strike(symbol, date, strike_price)
-            # get subscribe token from readme for strikePrice and 4 other prices upper and lower
-            flag = True
-            print(flag)
-            strikePricePrev1 = strike_price - 200
-            strikePricePrev2 = strike_price - 100
-            strikePriceNext1 = strike_price + 100
-            strikePriceNext2 = strike_price + 200
-            # print(strikePricePrev1)
-            # print(strikePricePrev2)
-            # print(strikePriceNext1)
-            # print(strikePriceNext2)
-
-            option_strikePrev1 = create_option_strike(symbol, date, strikePricePrev1)
-            option_strikePrev2 = create_option_strike(symbol, date, strikePricePrev2)
-            option_strikeNext1 = create_option_strike(symbol, date, strikePriceNext1)
-            option_strikeNext2 = create_option_strike(symbol, date, strikePriceNext2)
-
-            # print(option_strikePrev1)
-            # print(option_strikePrev2)
-            # print(option_strikeNext1)
-            # print(option_strikeNext2)
-
-            prev1Token = myData.get(str(option_strikePrev1))
-            prev2Token = myData.get(str(option_strikePrev2))
-            optionStrikeToken = myData.get(str(option_strike))
-            next1Token = myData.get(str(option_strikeNext1))
-            next2Token = myData.get(str(option_strikeNext2))
-
-            # print(prev1Token)
-            # print(prev2Token)
-            # print(next1Token)
-            # print(next2Token)
-
-            ws.subscribe([int(myData.get("BANKNIFTYTOKEN")),prev1Token, prev2Token, optionStrikeToken, next1Token, next2Token])
-            ws.set_mode(ws.MODE_FULL, [int(myData.get("BANKNIFTYTOKEN")),prev1Token, prev2Token, optionStrikeToken, next1Token, next2Token])
-            contract_prices[str(prev1Token)] = [str(option_strikePrev1)]
-            contract_prices[str(prev2Token)] = [str(option_strikePrev2)]
-            contract_prices[str(optionStrikeToken)] = [str(option_strike)]
-            contract_prices[str(next1Token)] = [str(option_strikeNext1)]
-            contract_prices[str(next2Token)] = [str(option_strikeNext2)]
+    # if not flag:
+    #     t = datetime.datetime.now()
+    #     latestPrice = 0
+    #     for tick in ticks:
+    #         if str(tick['instrument_token']) == str(myData.get('BANKNIFTYTOKEN')):
+    #             latestPrice = tick['last_price']
+    #     print("time before flag false ", t.minute, t.second, t.microsecond / 1000)
+    #     if latestPrice != (myData.get("bankNiftyLastPrice")):
+    #         print("Latest Price")
+    #         print(latestPrice)
+    #         t = datetime.datetime.now()
+    #         print("time after flag true ", t.minute, t.second, t.microsecond / 1000)
+    #         symbol = myData.get("symbol")
+    #         date = myData.get("date")
+    #         strike_price = round_to_nearest_hundred(int(latestPrice))
+    #         print(strike_price)
+    #         option_strike = create_option_strike(symbol, date, strike_price)
+    #         print(option_strike)
+    #         flag = True
+    #         print(flag)
 
     # Callback to receive ticks.
     print(ticks)
     now = datetime.datetime.now()
-    # book = load_workbook(filename=file_source)
-    format2 = '%H:%M:%S'
+    print(now.second)
 
-    # save the file
-    # book.save(filename=file_source)
-    # a += 1
-    # Example dictionary with contract names as keys and prices as values
-    # contract_prices['Time'].append(now.strftime(format2))
-    contract_prices['Time'].append(now.strftime(format2))
+    contract_prices['Date and Time'].append(now.strftime(format2))
     for key, value in contract_prices.items():
-        if str(key) == 'Time':
+        if str(key) == 'Date and Time':
             continue
         check = 1
         for tick in ticks:
             # print(str(key) + " "+str(tick['instrument_token']))
             if str(key) == str(tick['instrument_token']):
-                contract_prices[key].append(tick['last_price'])
-                # print(str(key) + " " + str(tick['instrument_token']))
-                # print(contract_prices)
+                jj = 10
+                for ii in range(50):
+                    jj = jj + 2
+                    contract_prices[key].append(tick['last_price'] + jj)
+                    jj = jj - 1
+                    contract_prices[key].append(tick['last_price'] + jj)
                 check = 0
                 break
         if check == 1:
             contract_prices[key].append(0)
 
 
-# , 10483458,10490114,10498562,10499074,10499586
+def extract_values(json_file):
+    now = datetime.datetime.today()
+    contract_prices[str("Date and Time")] = [now.strftime(format1)]
+    with open(json_file, 'r') as file:
+        data = json.load(file)
+        values = list(data.values())
+        keys = list(data.keys())
+        for key, value in zip(keys, values):
+            contract_prices[str(value)] = [str(key)]
+    return values
+
+
+json_filename = 'token.json'
+
 
 def on_connect(ws, response):
     # Callback on successful connect.
     # Subscribe to a list of instrument_tokens (RELIANCE and ACC here).
-    ws.subscribe([myData.get("BANKNIFTYTOKEN")])
-    ws.set_mode(ws.MODE_FULL, [myData.get("BANKNIFTYTOKEN")])
+    tokens = extract_values(json_filename)
+    ws.subscribe(tokens)
+    ws.set_mode(ws.MODE_FULL, tokens)
     # 260105==banknifty
 
 
@@ -198,9 +187,16 @@ kws.connect(threaded=True)
 # Place an order
 # BuyOrder
 
-while 1:
+while myData.get("OrderPlacementEnabled"):
     t = datetime.datetime.now()
-    if t.minute >= int(myData.get("timeInMinutes")) and (t.microsecond / 1000) >= 50 and flag:
+    if t.minute >= int(myData.get("timeInMinutes")) and (t.microsecond / 1000) >= 50:
+        latestPrice = int(kite.quote("NSE:NIFTY BANK")["NSE:NIFTY BANK"]['last_price'])
+        symbol = myData.get("symbol")
+        date = myData.get("date")
+        strike_price = round_to_nearest_hundred(int(latestPrice))
+        print(strike_price)
+        option_strike = create_option_strike(symbol, date, strike_price)
+        print(option_strike)
         print("Time before placing the order", t.minute, t.second, t.microsecond / 1000)
         try:
             order_id = kite.place_order(tradingsymbol=option_strike,
@@ -220,7 +216,6 @@ while 1:
         print("Breaking buyOrder Loop")
         break
 
-
 t = datetime.datetime.now()
 print("Time before 10 second sleep", t.minute, t.second, t.microsecond / 1000)
 time.sleep(9)
@@ -230,17 +225,16 @@ print("Time after 10 second sleep", t.minute, t.second, t.microsecond / 1000)
 # kite.cancel_order(variety=kite.VARIETY_AMO,
 #                   order_id='231120000001027')
 
-orderBook = kite.orders()
-print(orderBook)
+
 # SEll ORDER
 
 try:
     orderBook = kite.orders()
     print(orderBook)
     print(orderBook[-1]['status'])
-    if orderBook[-1]['status'] == 'COMPLETE':
-        t = datetime.datetime.now()
-        print("Time before selling the order", t.minute, t.second, t.microsecond / 1000)
+    t = datetime.datetime.now()
+    print("Time before selling the order", t.minute, t.second, t.microsecond / 1000)
+    if orderBook[-1]['status'] == 'COMPLETE' and myData.get("OrderPlacementEnabled"):
         orderid2 = kite.place_order(tradingsymbol=option_strike,
                                     exchange=kite.EXCHANGE_NFO,
                                     transaction_type=kite.TRANSACTION_TYPE_SELL,
@@ -295,7 +289,53 @@ df = pd.DataFrame.from_dict(contract_prices, orient='index')
 print(df)
 append_df_to_excel(df, 'BNData.xlsx')
 
-# Get instruments
-# with open('readme.txt', 'w') as f:
+
+# Load the existing workbook
+
+def is_numeric(value):
+    try:
+        float(value)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
+workbook = openpyxl.load_workbook('BNData.xlsx')
+worksheet = workbook.active
+# Define fill colors
+green_fill = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
+red_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
+
+# Specify the range where you want to apply the conditional formatting (C3:Z8 based on the provided data)
+start_row, end_row = worksheet.max_row - int(myData.get("maxTokenToSubscribe")), worksheet.max_row
+start_col, end_col = 3, worksheet.max_column
+
+# Apply conditional formatting based on the formula
+for row in range(start_row, end_row + 1):
+    for col in range(start_col, end_col + 1):
+        current_cell = worksheet.cell(row=row, column=col)
+        previous_cell = worksheet.cell(row=row, column=col - 1)
+
+        # Check if both cells contain numeric values
+        if is_numeric(previous_cell.value) and is_numeric(current_cell.value):
+            # Check if previous column value is less than current column value
+            if float(previous_cell.value) < float(current_cell.value):
+                current_cell.fill = green_fill
+            elif float(previous_cell.value) >= float(current_cell.value):
+                current_cell.fill = red_fill
+        # elif current_cell.value == 0:
+        #     # If current column value is zero, copy the fill color of the previous column
+        #     current_cell.fill = green_fill
+
+workbook.save('BNData.xlsx')
+print("QUOTE")
+# for ii in range(50):
+#     t = datetime.datetime.now()
+#     print(t.second)
+#     print(t.microsecond/1000)
+#     print(kite.quote("NSE:NIFTY BANK")["NSE:NIFTY BANK"]['last_price'])
+
+# # Get instruments
+# with open('readme.csv', 'w') as f:
 #     f.write(str(kite.instruments('NFO')))
 #
